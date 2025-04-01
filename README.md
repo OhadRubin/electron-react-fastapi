@@ -2,7 +2,10 @@
 
 ## GitHub Repository
 
-
+```
+curl -X POST http://localhost:8001/tasks -H "Content-Type: application/json" -d '{"name":"New task from curl","timeframe":"3 days","completed":false}'
+curl -X DELETE http://localhost:8001/tasks/pop
+```
 
 This application combines a FastAPI backend with a React frontend, wrapped in an Electron system tray application.
 

@@ -51,56 +51,6 @@ def format_sse(data: str, event=None) -> str:
         msg = f"event: {event}\n{msg}"
     return msg
 
-# HTML content with stop server button
-STOP_SERVER_HTML = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Task Manager with Controls</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        .server-controls {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            z-index: 1000;
-        }
-        .stop-button {
-            background-color: #f44336;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .stop-button:hover {
-            background-color: #d32f2f;
-        }
-    </style>
-</head>
-<body>
-    <div class="server-controls">
-        <button id="stop-server" class="stop-button">Stop Server</button>
-    </div>
-    
-    <script>
-        document.getElementById('stop-server').addEventListener('click', () => {
-            if (window.electronAPI) {
-                window.electronAPI.stopServer();
-            } else {
-                alert('This button only works in the Electron app');
-            }
-        });
-    </script>
-</body>
-</html>
-"""
-
 # SSE endpoint
 @app.get("/events")
 async def events(request: Request):
@@ -166,19 +116,21 @@ async def broadcast(data):
     else:
         print("No connected clients to broadcast to")
 
-@app.get("/", response_class=HTMLResponse)
-def read_root():
-    # Inject the control panel HTML
-    return STOP_SERVER_HTML + """
-    <div style="padding: 20px;">
-        <h1>Task API is running</h1>
-        <p>You can access the API at <a href="/docs">/docs</a>.</p>
-    </div>
-    """
 
 @app.get("/tasks", response_model=List[Task])
 def get_tasks():
     return tasks
+
+
+@app.get("/tasks/peek", response_model=Task)
+def peek_task():
+    """Peek at the top task on the stack without removing it"""
+    if not tasks:
+        raise HTTPException(status_code=404, detail="No tasks to peek")
+    
+    # Return the first task (top of stack) without removing it
+    return tasks[0]
+
 
 @app.get("/tasks/{task_id}", response_model=Task)
 def get_task(task_id: str):
