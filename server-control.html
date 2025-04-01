@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Server Control</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 80%;
+            max-width: 500px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        
+        .button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        
+        .stop-button {
+            background-color: #f44336;
+        }
+        
+        .button:hover {
+            opacity: 0.9;
+        }
+        
+        .status {
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .running {
+            background-color: #4CAF50;
+        }
+        
+        .stopped {
+            background-color: #f44336;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>FastAPI Server Control</h1>
+        <div class="status">
+            Status: <span id="status-text">Checking...</span>
+            <span id="status-indicator" class="status-indicator"></span>
+        </div>
+        <button id="start-server" class="button">Start Server</button>
+        <button id="stop-server" class="button stop-button">Stop Server</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async() => {
+            const startBtn = document.getElementById('start-server');
+            const stopBtn = document.getElementById('stop-server');
+            const statusText = document.getElementById('status-text');
+            const statusIndicator = document.getElementById('status-indicator');
+
+            // Check server status on load
+            updateStatus();
+
+            startBtn.addEventListener('click', async() => {
+                startBtn.disabled = true;
+                try {
+                    const result = await window.electronAPI.startServer();
+                    if (result.success) {
+                        // Wait for server to start before redirecting
+                        setTimeout(() => {
+                            window.location.href = 'http://localhost:8001';
+                        }, 1000);
+                    }
+                } catch (error) {
+                    console.error('Failed to start server:', error);
+                } finally {
+                    startBtn.disabled = false;
+                    updateStatus();
+                }
+            });
+
+            stopBtn.addEventListener('click', async() => {
+                stopBtn.disabled = true;
+                try {
+                    await window.electronAPI.stopServer();
+                } catch (error) {
+                    console.error('Failed to stop server:', error);
+                } finally {
+                    stopBtn.disabled = false;
+                    updateStatus();
+                }
+            });
+
+            async function updateStatus() {
+                try {
+                    const status = await window.electronAPI.getServerStatus();
+                    if (status.running) {
+                        statusText.textContent = 'Running';
+                        statusIndicator.className = 'status-indicator running';
+                        startBtn.disabled = true;
+                        stopBtn.disabled = false;
+                    } else {
+                        statusText.textContent = 'Stopped';
+                        statusIndicator.className = 'status-indicator stopped';
+                        startBtn.disabled = false;
+                        stopBtn.disabled = true;
+                    }
+                } catch (error) {
+                    console.error('Failed to get server status:', error);
+                    statusText.textContent = 'Unknown';
+                    statusIndicator.className = 'status-indicator';
+                }
+            }
+
+            // Update status every 2 seconds
+            setInterval(updateStatus, 2000);
+        });
+    </script>
+</body>
+
+</html>
